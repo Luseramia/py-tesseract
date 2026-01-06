@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package ocr;
+
+service OCRService {
+  // Process a single image
+  rpc ProcessImage (ImageRequest) returns (OCRResult) {}
+  
+  // Process multiple images structure
+  rpc ProcessBatch (BatchImageRequest) returns (BatchOCRResult) {}
+}
+
+message ImageRequest {
+  bytes image_data = 1;
+  string filename = 2; 
+}
+
+message BatchImageRequest {
+  repeated ImageRequest requests = 1;
+}
+
+message OCRResult {
+  string amount = 1;
+  string date = 2;
+  string ref = 3;
+  string raw_text = 4;
+  string error = 5;
+}
+
+message BatchOCRResult {
+  repeated OCRResult results = 1;
+}
