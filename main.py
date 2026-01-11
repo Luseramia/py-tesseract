@@ -16,11 +16,12 @@ if os.name == 'nt':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def extract_info_from_image(img):
+   
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # เพิ่มความคม
-    # gray = cv2.GaussianBlur(gray, (3,3), 0)
+    gray = cv2.GaussianBlur(gray, (3,3), 0)
 
     # Adaptive Thresholding looks too aggressive for some images causing noise
     # Let's try passing the grayscale image directly first, strictly as the original commented out code suggested
@@ -31,11 +32,19 @@ def extract_info_from_image(img):
     
     # Debug: Uncomment to save image to check what tesseract sees
     # cv2.imwrite("debug_ocr_input.jpg", processed_img)
+
+    # eng_text = pytesseract.image_to_string(
+    #     processed_img,
+    #     lang="eng",
+    #     config="--psm 6"
+    # )
+    # print('eng_text',eng_text)
+    
     
     ocr_text = pytesseract.image_to_string(
        processed_img, 
        lang="tha+eng",
-       config="--psm 6"
+        config="--oem 1 --psm 11"
     )
 
     # Extract Amount
@@ -92,7 +101,9 @@ def process_image_endpoint():
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['file']
-    
+    print("Filename:", file.filename)
+    print("Content-Type:", file.content_type)
+
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
