@@ -30,4 +30,4 @@ COPY . .
 EXPOSE 5000
 
 # Run main.py when the container launches
-CMD ["python", "main.py"]
+CMD ["python", "grpc_server.py"]
