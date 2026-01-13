@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Make port 5000 available to the world outside this container
-EXPOSE 5000
+EXPOSE 50051
 
 # Run main.py when the container launches
 CMD ["python", "grpc_server.py"]

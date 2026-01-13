@@ -3,3 +3,6 @@ Pillow
 opencv-python-headless
 numpy
 pytesseract
+grpcio
+grpcio-tools
+protobuf

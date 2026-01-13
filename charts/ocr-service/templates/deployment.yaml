@@ -34,16 +34,16 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
+            - name: grpc
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           # Using TCP socket check because the app might not have a dedicated health check endpoint on root
           livenessProbe:
             tcpSocket:
-              port: http
+              port: grpc
           readinessProbe:
             tcpSocket:
-              port: http
+              port: grpc
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
