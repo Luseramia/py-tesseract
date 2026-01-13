@@ -38,12 +38,22 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           # Using TCP socket check because the app might not have a dedicated health check endpoint on root
-          livenessProbe:
-            tcpSocket:
-              port: grpc
           readinessProbe:
             tcpSocket:
-              port: grpc
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: grpc
+          # readinessProbe:
+          #   tcpSocket:
+          #     port: grpc
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
