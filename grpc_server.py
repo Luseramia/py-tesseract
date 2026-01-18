@@ -35,6 +35,7 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                 username=username,
                 type_of_expense=type_of_expense,
                 amount=result['amount'],
+                date=result['date'],
                 expense_description=result['ref'],
                 note=result['raw_text']
             )
@@ -71,6 +72,7 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                         username=username,
                         type_of_expense=type_of_expense,
                         amount=result['amount'],
+                        date=result['date'],
                         expense_description=result['ref'],
                         note=result['raw_text']
                     )
@@ -89,7 +91,7 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
         
         return response
     
-def create_expenses(username, type_of_expense, amount, expense_description, note):
+def create_expenses(username, type_of_expense, amount, date, expense_description, note):
         production_api = os.environ.get('N8N_PRODUCTION_API', "http://n8n.n8n.svc.cluster.local:443/webhook/d3b132c4-8380-4b0d-96a6-ea11d2f040a9")
         
         headers = {
@@ -99,9 +101,9 @@ def create_expenses(username, type_of_expense, amount, expense_description, note
         
         payload = {
             "username": username,
-            "typeOfExpense": type_of_expense,
+            "typeOfExpense": 'BY MOBILE APP',
             "amount": amount,
-            "date": datetime.now().isoformat(),
+            "date": date,
             "expenseDiscription": expense_description,
             "note": note
         }
