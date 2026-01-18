@@ -6,3 +6,4 @@ pytesseract
 grpcio
 grpcio-tools
 protobuf
+requests

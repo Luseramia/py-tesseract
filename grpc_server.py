@@ -6,6 +6,10 @@ import cv2
 import ocr_pb2
 import ocr_pb2_grpc
 from main import extract_info_from_image
+import requests
+import json
+from datetime import datetime
+import os
 
 class OCRService(ocr_pb2_grpc.OCRServiceServicer):
     def ProcessImage(self, request, context):
@@ -47,18 +51,64 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                     continue
 
                 result = extract_info_from_image(img)
-                response.results.append(ocr_pb2.OCRResult(
-                    amount=str(result.get("amount", "")),
-                    date=str(result.get("date", "")),
-                    ref=str(result.get("ref", "")),
-                    raw_text=str(result.get("raw_text", "")),
-                    error=""
-                ))
+
+                webhook_response = create_expenses(
+                        amount=result['amount'],
+                        expense_description=result['ref'],
+                        note=result['raw_text']
+                    )
+
+                    # Merge results
+                final_response = {
+                        "ocr_result": results.append(ocr_pb2.OCRResult(
+                        amount=str(result.get("amount", "")),
+                        date=str(result.get("date", "")),
+                        ref=str(result.get("ref", "")),
+                        raw_text=str(result.get("raw_text", "")),
+                        error=""
+                        )),
+                            "webhook_result": webhook_response
+                        }
+
+                response = final_response
+                
+                
             except Exception as e:
                 response.results.append(ocr_pb2.OCRResult(error=str(e)))
         
         return response
-
+    def create_expenses(username, type_of_expense, amount, expense_description, note):
+        production_api = os.environ.get('N8N_PRODUCTION_API', "http://n8n.n8n.svc.cluster.local:443/webhook/d3b132c4-8380-4b0d-96a6-ea11d2f040a9")
+        
+        headers = {
+            "Content-Type": "application/json",
+            "x-AUTH": "MTI5OTk0OTgxOTE0MTU1NDE5Nw",
+        }
+        
+        payload = {
+            "username": username,
+            "typeOfExpense": type_of_expense,
+            "amount": amount,
+            "date": datetime.now().isoformat(),
+            "expenseDiscription": expense_description,
+            "note": note
+        }
+        
+        try:
+            response = requests.post(production_api, headers=headers, json=payload)
+            print("Status:", response.status_code)
+            print("Headers:", response.headers)
+            
+            try:
+                return response.json()
+            except ValueError:
+                return {"error": "Not JSON", "raw": response.text}
+                
+        except Exception as err:
+            print("Fetch error:", err)
+            return {"error": str(err)}
+    
+    
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     ocr_pb2_grpc.add_OCRServiceServicer_to_server(OCRService(), server)

@@ -6,6 +6,9 @@ import base64
 import io
 import pytesseract
 import re
+import requests
+import json
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -121,7 +124,27 @@ def process_image_endpoint():
              return jsonify({"error": "Invalid image file"}), 400
 
         result = extract_info_from_image(img)
-        return jsonify(result)
+
+        # Extract extra fields from form data if available
+        username = request.form.get('username', 'default_user')
+        type_of_expense = request.form.get('typeOfExpense', 'General')
+        
+        # Send to n8n
+        webhook_response = create_expenses(
+            username=username,
+            type_of_expense=type_of_expense,
+            amount=result['amount'],
+            expense_description=result['ref'],
+            note=result['raw_text']
+        )
+
+        # Merge results
+        final_response = {
+            "ocr_result": result,
+            "webhook_result": webhook_response
+        }
+
+        return jsonify(final_response)
 
 def ocr_from_base64_logic(base64_str: str) -> str:
     # ลบ prefix ถ้ามี (เช่น data:image/jpeg;base64,)
@@ -135,6 +158,39 @@ def ocr_from_base64_logic(base64_str: str) -> str:
     # For consistency let's stick to the requested extraction logic which used cv2 processing.
     img_np = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     return extract_info_from_image(img_np)
+
+
+
+def create_expenses(username, type_of_expense, amount, expense_description, note):
+    production_api = os.environ.get('N8N_PRODUCTION_API', "http://192.168.1.53:5678/webhook/02bb3007-efbd-414c-8e6c-2cf2718ce984")
+    
+    headers = {
+        "Content-Type": "application/json",
+        "x-AUTH": "MTI5OTk0OTgxOTE0MTU1NDE5Nw",
+    }
+    
+    payload = {
+        "username": username,
+        "typeOfExpense": type_of_expense,
+        "amount": amount,
+        "date": datetime.now().isoformat(),
+        "expenseDiscription": expense_description,
+        "note": note
+    }
+    
+    try:
+        response = requests.post(production_api, headers=headers, json=payload)
+        print("Status:", response.status_code)
+        print("Headers:", response.headers)
+        
+        try:
+            return response.json()
+        except ValueError:
+            return {"error": "Not JSON", "raw": response.text}
+            
+    except Exception as err:
+        print("Fetch error:", err)
+        return {"error": str(err)}
 
 
 if __name__ == '__main__':
