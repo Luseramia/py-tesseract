@@ -13,6 +13,8 @@ service OCRService {
 message ImageRequest {
   bytes image_data = 1;
   string filename = 2; 
+  string username = 3;
+  string type_of_expense = 4;
 }
 
 message BatchImageRequest {
@@ -25,6 +27,7 @@ message OCRResult {
   string ref = 3;
   string raw_text = 4;
   string error = 5;
+  string webhook_result = 6;
 }
 
 message BatchOCRResult {

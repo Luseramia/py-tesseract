@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tocr.proto\x12\x03ocr\"4\n\x0cImageRequest\x12\x12\n\nimage_data\x18\x01 \x01(\x0c\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\"8\n\x11\x42\x61tchImageRequest\x12#\n\x08requests\x18\x01 \x03(\x0b\x32\x11.ocr.ImageRequest\"W\n\tOCRResult\x12\x0e\n\x06\x61mount\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12\x0b\n\x03ref\x18\x03 \x01(\t\x12\x10\n\x08raw_text\x18\x04 \x01(\t\x12\r\n\x05\x65rror\x18\x05 \x01(\t\"1\n\x0e\x42\x61tchOCRResult\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.ocr.OCRResult2\x80\x01\n\nOCRService\x12\x33\n\x0cProcessImage\x12\x11.ocr.ImageRequest\x1a\x0e.ocr.OCRResult\"\x00\x12=\n\x0cProcessBatch\x12\x16.ocr.BatchImageRequest\x1a\x13.ocr.BatchOCRResult\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tocr.proto\x12\x03ocr\"_\n\x0cImageRequest\x12\x12\n\nimage_data\x18\x01 \x01(\x0c\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\x12\x17\n\x0ftype_of_expense\x18\x04 \x01(\t\"8\n\x11\x42\x61tchImageRequest\x12#\n\x08requests\x18\x01 \x03(\x0b\x32\x11.ocr.ImageRequest\"o\n\tOCRResult\x12\x0e\n\x06\x61mount\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12\x0b\n\x03ref\x18\x03 \x01(\t\x12\x10\n\x08raw_text\x18\x04 \x01(\t\x12\r\n\x05\x65rror\x18\x05 \x01(\t\x12\x16\n\x0ewebhook_result\x18\x06 \x01(\t\"1\n\x0e\x42\x61tchOCRResult\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.ocr.OCRResult2\x80\x01\n\nOCRService\x12\x33\n\x0cProcessImage\x12\x11.ocr.ImageRequest\x1a\x0e.ocr.OCRResult\"\x00\x12=\n\x0cProcessBatch\x12\x16.ocr.BatchImageRequest\x1a\x13.ocr.BatchOCRResult\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,13 +32,13 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ocr_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_IMAGEREQUEST']._serialized_start=18
-  _globals['_IMAGEREQUEST']._serialized_end=70
-  _globals['_BATCHIMAGEREQUEST']._serialized_start=72
-  _globals['_BATCHIMAGEREQUEST']._serialized_end=128
-  _globals['_OCRRESULT']._serialized_start=130
-  _globals['_OCRRESULT']._serialized_end=217
-  _globals['_BATCHOCRRESULT']._serialized_start=219
-  _globals['_BATCHOCRRESULT']._serialized_end=268
-  _globals['_OCRSERVICE']._serialized_start=271
-  _globals['_OCRSERVICE']._serialized_end=399
+  _globals['_IMAGEREQUEST']._serialized_end=113
+  _globals['_BATCHIMAGEREQUEST']._serialized_start=115
+  _globals['_BATCHIMAGEREQUEST']._serialized_end=171
+  _globals['_OCRRESULT']._serialized_start=173
+  _globals['_OCRRESULT']._serialized_end=284
+  _globals['_BATCHOCRRESULT']._serialized_start=286
+  _globals['_BATCHOCRRESULT']._serialized_end=335
+  _globals['_OCRSERVICE']._serialized_start=338
+  _globals['_OCRSERVICE']._serialized_end=466
 # @@protoc_insertion_point(module_scope)

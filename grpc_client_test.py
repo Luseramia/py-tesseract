@@ -22,6 +22,7 @@ def run():
         print(f"  Amount: {response.amount}")
         print(f"  Date: {response.date}")
         print(f"  Ref: {response.ref}")
+        print(f"  Webhook: {response.webhook_result}")
         if response.error:
             print(f"  Error: {response.error}")
 

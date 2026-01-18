@@ -25,13 +25,27 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
 
             # Process image
             result = extract_info_from_image(img)
+
+            # Get extra fields
+            username = request.username if request.username else "default_user"
+            type_of_expense = request.type_of_expense if request.type_of_expense else "General"
+
+            # Call n8n
+            webhook_response = create_expenses(
+                username=username,
+                type_of_expense=type_of_expense,
+                amount=result['amount'],
+                expense_description=result['ref'],
+                note=result['raw_text']
+            )
             
             return ocr_pb2.OCRResult(
                 amount=str(result.get("amount", "")),
                 date=str(result.get("date", "")),
                 ref=str(result.get("ref", "")),
                 raw_text=str(result.get("raw_text", "")),
-                error=""
+                error="",
+                webhook_result=json.dumps(webhook_response)
             )
         except Exception as e:
             print(f"Error processing image: {e}")
@@ -40,38 +54,35 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
     def ProcessBatch(self, request, context):
         response = ocr_pb2.BatchOCRResult()
         for img_req in request.requests:
-            # Reuse ProcessImage logic or just call it directly if overhead is low
-            # Here we just implement logic to keep it simple and efficient
             try:
                 nparr = np.frombuffer(img_req.image_data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 
                 if img is None:
-                    response.results.append(ocr_pb2.OCRResult(error="Invalid image data", amount="", date="", ref="", raw_text=""))
+                    response.results.append(ocr_pb2.OCRResult(error="Invalid image data"))
                     continue
 
                 result = extract_info_from_image(img)
 
+                username = img_req.username if img_req.username else "default_user"
+                type_of_expense = img_req.type_of_expense if img_req.type_of_expense else "General"
+
                 webhook_response = create_expenses(
+                        username=username,
+                        type_of_expense=type_of_expense,
                         amount=result['amount'],
                         expense_description=result['ref'],
                         note=result['raw_text']
                     )
 
-                    # Merge results
-                final_response = {
-                        "ocr_result": (ocr_pb2.OCRResult(
-                        amount=str(result.get("amount", "")),
-                        date=str(result.get("date", "")),
-                        ref=str(result.get("ref", "")),
-                        raw_text=str(result.get("raw_text", "")),
-                        error=""
-                        )),
-                            "webhook_result": webhook_response
-                        }
-
-                response = final_response
-                
+                response.results.append(ocr_pb2.OCRResult(
+                    amount=str(result.get("amount", "")),
+                    date=str(result.get("date", "")),
+                    ref=str(result.get("ref", "")),
+                    raw_text=str(result.get("raw_text", "")),
+                    error="",
+                    webhook_result=json.dumps(webhook_response)
+                ))
                 
             except Exception as e:
                 response.results.append(ocr_pb2.OCRResult(error=str(e)))
