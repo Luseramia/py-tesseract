@@ -60,7 +60,7 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
 
                     # Merge results
                 final_response = {
-                        "ocr_result": results.append(ocr_pb2.OCRResult(
+                        "ocr_result": (ocr_pb2.OCRResult(
                         amount=str(result.get("amount", "")),
                         date=str(result.get("date", "")),
                         ref=str(result.get("ref", "")),
@@ -77,7 +77,8 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                 response.results.append(ocr_pb2.OCRResult(error=str(e)))
         
         return response
-    def create_expenses(username, type_of_expense, amount, expense_description, note):
+    
+def create_expenses(username, type_of_expense, amount, expense_description, note):
         production_api = os.environ.get('N8N_PRODUCTION_API', "http://n8n.n8n.svc.cluster.local:443/webhook/d3b132c4-8380-4b0d-96a6-ea11d2f040a9")
         
         headers = {
