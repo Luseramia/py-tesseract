@@ -90,6 +90,45 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                 response.results.append(ocr_pb2.OCRResult(error=str(e)))
         
         return response
+
+    def ProcessImages(self, request, context):
+        response = ocr_pb2.BatchOCRResult()
+        username = request.username if request.username else "default_user"
+        type_of_expense = request.type_of_expense if request.type_of_expense else "General"
+        
+        for image_bytes in request.image_data:
+            try:
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if img is None:
+                    response.results.append(ocr_pb2.OCRResult(error="Invalid image data"))
+                    continue
+
+                result = extract_info_from_image(img)
+
+                webhook_response = create_expenses(
+                        username=username,
+                        type_of_expense=type_of_expense,
+                        amount=result['amount'],
+                        date=result['date'],
+                        expense_description=result['ref'],
+                        note=result['raw_text']
+                    )
+
+                response.results.append(ocr_pb2.OCRResult(
+                    amount=str(result.get("amount", "")),
+                    date=str(result.get("date", "")),
+                    ref=str(result.get("ref", "")),
+                    raw_text=str(result.get("raw_text", "")),
+                    error="",
+                    webhook_result=json.dumps(webhook_response)
+                ))
+                
+            except Exception as e:
+                response.results.append(ocr_pb2.OCRResult(error=str(e)))
+        
+        return response
     
 def create_expenses(username, type_of_expense, amount, date, expense_description, note):
         production_api = os.environ.get('N8N_PRODUCTION_API', "http://n8n.n8n.svc.cluster.local:443/webhook/d3b132c4-8380-4b0d-96a6-ea11d2f040a9")
@@ -126,7 +165,7 @@ def create_expenses(username, type_of_expense, amount, date, expense_description
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     ocr_pb2_grpc.add_OCRServiceServicer_to_server(OCRService(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:5000')
     print("gRPC Server starting on port 50051...")
     server.start()
     try:

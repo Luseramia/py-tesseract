@@ -44,6 +44,11 @@ class OCRServiceStub(object):
                 request_serializer=ocr__pb2.BatchImageRequest.SerializeToString,
                 response_deserializer=ocr__pb2.BatchOCRResult.FromString,
                 _registered_method=True)
+        self.ProcessImages = channel.unary_unary(
+                '/ocr.OCRService/ProcessImages',
+                request_serializer=ocr__pb2.MultiImageRequest.SerializeToString,
+                response_deserializer=ocr__pb2.BatchOCRResult.FromString,
+                _registered_method=True)
 
 
 class OCRServiceServicer(object):
@@ -63,6 +68,13 @@ class OCRServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ProcessImages(self, request, context):
+        """Process multiple images structure with shared metadata
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OCRServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -74,6 +86,11 @@ def add_OCRServiceServicer_to_server(servicer, server):
             'ProcessBatch': grpc.unary_unary_rpc_method_handler(
                     servicer.ProcessBatch,
                     request_deserializer=ocr__pb2.BatchImageRequest.FromString,
+                    response_serializer=ocr__pb2.BatchOCRResult.SerializeToString,
+            ),
+            'ProcessImages': grpc.unary_unary_rpc_method_handler(
+                    servicer.ProcessImages,
+                    request_deserializer=ocr__pb2.MultiImageRequest.FromString,
                     response_serializer=ocr__pb2.BatchOCRResult.SerializeToString,
             ),
     }
@@ -130,6 +147,33 @@ class OCRService(object):
             target,
             '/ocr.OCRService/ProcessBatch',
             ocr__pb2.BatchImageRequest.SerializeToString,
+            ocr__pb2.BatchOCRResult.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ProcessImages(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ocr.OCRService/ProcessImages',
+            ocr__pb2.MultiImageRequest.SerializeToString,
             ocr__pb2.BatchOCRResult.FromString,
             options,
             channel_credentials,
