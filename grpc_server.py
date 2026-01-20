@@ -144,7 +144,7 @@ def create_expenses(username, type_of_expense, amount, date, expense_description
             "amount": amount,
             "date": date,
             "expenseDiscription": expense_description,
-            "note": note
+            # "note": note
         }
         
         try:
