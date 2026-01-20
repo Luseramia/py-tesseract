@@ -165,7 +165,7 @@ def create_expenses(username, type_of_expense, amount, date, expense_description
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     ocr_pb2_grpc.add_OCRServiceServicer_to_server(OCRService(), server)
-    server.add_insecure_port('[::]:5000')
+    server.add_insecure_port('[::]:50051')
     print("gRPC Server starting on port 50051...")
     server.start()
     try:
