@@ -7,3 +7,4 @@ grpcio
 grpcio-tools
 protobuf
 requests
+psycopg2

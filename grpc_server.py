@@ -1,3 +1,4 @@
+
 import grpc
 from concurrent import futures
 import time
@@ -10,6 +11,10 @@ import requests
 import json
 from datetime import datetime
 import os
+# from db_service import DBService
+from db import DBService
+# Initialize DB Service
+db_service = DBService()
 
 class OCRService(ocr_pb2_grpc.OCRServiceServicer):
     def ProcessImage(self, request, context):
@@ -38,6 +43,14 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                 date=result['date'],
                 expense_description=result['ref'],
                 note=result['raw_text']
+            )
+
+            # Save to Database
+            db_service.insert_transaction(
+                amount=str(result.get("amount", "")),
+                date=str(result.get("date", "")),
+                description=str(result.get("ref", "")),
+                type_of_ie=type_of_expense
             )
             
             return ocr_pb2.OCRResult(
@@ -76,6 +89,14 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                         expense_description=result['ref'],
                         note=result['raw_text']
                     )
+
+                # Save to Database
+                db_service.insert_transaction(
+                    amount=str(result.get("amount", "")),
+                    date=str(result.get("date", "")),
+                    description=str(result.get("ref", "")),
+                    type_of_ie=type_of_expense
+                )
 
                 response.results.append(ocr_pb2.OCRResult(
                     amount=str(result.get("amount", "")),
@@ -116,6 +137,14 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                         note=result['raw_text']
                     )
 
+                # Save to Database
+                db_service.insert_transaction(
+                    amount=str(result.get("amount", "")),
+                    date=str(result.get("date", "")),
+                    description=str(result.get("ref", "")),
+                    type_of_ie=type_of_expense
+                )
+
                 response.results.append(ocr_pb2.OCRResult(
                     amount=str(result.get("amount", "")),
                     date=str(result.get("date", "")),
@@ -135,7 +164,7 @@ def create_expenses(username, type_of_expense, amount, date, expense_description
         
         headers = {
             "Content-Type": "application/json",
-            "x-AUTH": "MTI5OTk0OTgxOTE0MTU1NDE5Nw",
+            "x-AUTH": "",
         }
         
         payload = {

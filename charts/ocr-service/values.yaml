@@ -80,3 +80,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+db:
+  host: "192.168.1.44"
+  port: "5432"
+  user: "tarchunk"
+  password: ""
+  name: "IE"

@@ -166,7 +166,7 @@ def create_expenses(username, type_of_expense, amount, expense_description, note
     
     headers = {
         "Content-Type": "application/json",
-        "x-AUTH": "MTI5OTk0OTgxOTE0MTU1NDE5Nw",
+        "x-AUTH": "",
     }
     
     payload = {

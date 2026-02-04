@@ -33,6 +33,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "ocr-service.fullname" . }}-config
+            - secretRef:
+                name: {{ include "ocr-service.fullname" . }}-secret
           ports:
             - name: grpc
               containerPort: {{ .Values.service.port }}
