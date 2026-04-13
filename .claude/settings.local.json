@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber ok'\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python parse_bank_statement.py \"STM_SA_14MAR26_13APR26-unlocked.pdf\")",
+      "Bash(ls \"c:/Users/tarch/OneDrive/เดสก์ท็อป/personal_project/qr/\"*.pdf)",
+      "Bash(python parse_bank_statement.py \"c:/Users/tarch/Downloads/STM_SA_14MAR26_13APR26-unlocked.pdf\")",
+      "Bash(python -c ':*)",
+      "Bash(python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ocr.proto)",
+      "Bash(python -c \"import grpc_server\")"
+    ]
+  }
+}
