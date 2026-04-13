@@ -49,6 +49,11 @@ class OCRServiceStub(object):
                 request_serializer=ocr__pb2.MultiImageRequest.SerializeToString,
                 response_deserializer=ocr__pb2.BatchOCRResult.FromString,
                 _registered_method=True)
+        self.ProcessStatement = channel.unary_unary(
+                '/ocr.OCRService/ProcessStatement',
+                request_serializer=ocr__pb2.PDFStatementRequest.SerializeToString,
+                response_deserializer=ocr__pb2.StatementResult.FromString,
+                _registered_method=True)
 
 
 class OCRServiceServicer(object):
@@ -75,6 +80,13 @@ class OCRServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ProcessStatement(self, request, context):
+        """Parse a Krungsri bank statement PDF and bulk-insert transactions
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OCRServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -92,6 +104,11 @@ def add_OCRServiceServicer_to_server(servicer, server):
                     servicer.ProcessImages,
                     request_deserializer=ocr__pb2.MultiImageRequest.FromString,
                     response_serializer=ocr__pb2.BatchOCRResult.SerializeToString,
+            ),
+            'ProcessStatement': grpc.unary_unary_rpc_method_handler(
+                    servicer.ProcessStatement,
+                    request_deserializer=ocr__pb2.PDFStatementRequest.FromString,
+                    response_serializer=ocr__pb2.StatementResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -175,6 +192,33 @@ class OCRService(object):
             '/ocr.OCRService/ProcessImages',
             ocr__pb2.MultiImageRequest.SerializeToString,
             ocr__pb2.BatchOCRResult.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ProcessStatement(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ocr.OCRService/ProcessStatement',
+            ocr__pb2.PDFStatementRequest.SerializeToString,
+            ocr__pb2.StatementResult.FromString,
             options,
             channel_credentials,
             insecure,

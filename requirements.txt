@@ -8,3 +8,4 @@ grpcio-tools
 protobuf
 requests
 psycopg2
+pdfplumber

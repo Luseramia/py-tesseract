@@ -2,11 +2,13 @@
 import grpc
 from concurrent import futures
 import time
+import tempfile
 import numpy as np
 import cv2
 import ocr_pb2
 import ocr_pb2_grpc
 from main import extract_info_from_image
+from parse_bank_statement import parse_krungsri_statement
 import requests
 import json
 from datetime import datetime
@@ -159,6 +161,66 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
         
         return response
     
+    def ProcessStatement(self, request, context):
+        username = request.username if request.username else "default_user"
+
+        try:
+            # Write PDF bytes to a temp file so pdfplumber can open it
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp.write(request.pdf_data)
+                tmp_path = tmp.name
+
+            stmt = parse_krungsri_statement(tmp_path)
+            os.unlink(tmp_path)
+
+            proto_txns = []
+            for tx in stmt.transactions:
+                # Insert every transaction into DB
+                db_service.insert_transaction(
+                    amount=str(tx.withdrawal if tx.withdrawal is not None else tx.deposit),
+                    date=tx.datetime,
+                    description=tx.transaction_type + (" | " + tx.details if tx.details else ""),
+                    type_of_ie="STATEMENT_WITHDRAW" if tx.withdrawal is not None else "STATEMENT_DEPOSIT",
+                )
+
+                # Call n8n webhook only for withdrawals (expenses)
+                if tx.withdrawal is not None:
+                    create_expenses(
+                        username=username,
+                        type_of_expense="BANK_STATEMENT",
+                        amount=tx.withdrawal,
+                        date=tx.datetime,
+                        expense_description=tx.transaction_type,
+                        note=tx.details,
+                    )
+
+                proto_txns.append(ocr_pb2.StatementTransaction(
+                    datetime=tx.datetime,
+                    transaction_type=tx.transaction_type,
+                    withdrawal=str(tx.withdrawal) if tx.withdrawal is not None else "",
+                    deposit=str(tx.deposit) if tx.deposit is not None else "",
+                    balance=str(tx.balance),
+                    channel=tx.channel,
+                    details=tx.details,
+                ))
+
+            return ocr_pb2.StatementResult(
+                account_name=stmt.account_name,
+                account_number=stmt.account_number,
+                branch=stmt.branch,
+                period_start=stmt.period_start,
+                period_end=stmt.period_end,
+                transactions=proto_txns,
+                withdrawal_total=str(stmt.summary.withdrawal_total) if stmt.summary else "",
+                deposit_total=str(stmt.summary.deposit_total) if stmt.summary else "",
+                error="",
+            )
+
+        except Exception as e:
+            print(f"Error processing statement: {e}")
+            return ocr_pb2.StatementResult(error=str(e))
+
+
 def create_expenses(username, type_of_expense, amount, date, expense_description, note):
         production_api = os.environ.get('N8N_PRODUCTION_API', "http://n8n.n8n.svc.cluster.local:443/webhook/d3b132c4-8380-4b0d-96a6-ea11d2f040a9")
         

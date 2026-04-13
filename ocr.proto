@@ -5,12 +5,15 @@ package ocr;
 service OCRService {
   // Process a single image
   rpc ProcessImage (ImageRequest) returns (OCRResult) {}
-  
+
   // Process multiple images structure
   rpc ProcessBatch (BatchImageRequest) returns (BatchOCRResult) {}
 
   // Process multiple images structure with shared metadata
   rpc ProcessImages (MultiImageRequest) returns (BatchOCRResult) {}
+
+  // Parse a Krungsri bank statement PDF and bulk-insert transactions
+  rpc ProcessStatement (PDFStatementRequest) returns (StatementResult) {}
 }
 
 message ImageRequest {
@@ -41,4 +44,33 @@ message OCRResult {
 
 message BatchOCRResult {
   repeated OCRResult results = 1;
+}
+
+// ---- Bank statement PDF ----
+
+message PDFStatementRequest {
+  bytes pdf_data = 1;
+  string username = 2;
+}
+
+message StatementTransaction {
+  string datetime = 1;
+  string transaction_type = 2;
+  string withdrawal = 3;   // empty string if this is a deposit
+  string deposit = 4;      // empty string if this is a withdrawal
+  string balance = 5;
+  string channel = 6;
+  string details = 7;
+}
+
+message StatementResult {
+  string account_name = 1;
+  string account_number = 2;
+  string branch = 3;
+  string period_start = 4;
+  string period_end = 5;
+  repeated StatementTransaction transactions = 6;
+  string withdrawal_total = 7;
+  string deposit_total = 8;
+  string error = 9;
 }
