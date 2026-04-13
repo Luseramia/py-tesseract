@@ -8,7 +8,10 @@
       "Bash(python parse_bank_statement.py \"c:/Users/tarch/Downloads/STM_SA_14MAR26_13APR26-unlocked.pdf\")",
       "Bash(python -c ':*)",
       "Bash(python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ocr.proto)",
-      "Bash(python -c \"import grpc_server\")"
+      "Bash(python -c \"import grpc_server\")",
+      "Bash(find /c/Users/tarch/OneDrive/เดสก์ท็อป/personal_project/qr -type f \\\\\\( -name \"*.py\" -o -name \"*.yaml\" -o -name \"*.yml\" \\\\\\) -exec grep -l \"keepalive\\\\|grpc_max\\\\|deadline\\\\|timeout\" {} \\\\;)",
+      "Bash(xargs grep:*)",
+      "Bash(ls -la *.ts *.js *.json)"
     ]
   }
 }

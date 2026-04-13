@@ -254,7 +254,30 @@ def create_expenses(username, type_of_expense, amount, date, expense_description
     
     
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server_options = [
+        # Send keepalive ping every 30 seconds to keep connection alive
+        ('grpc.keepalive_time_ms', 30000),
+        # Wait 10 seconds for keepalive ping ack before considering connection dead
+        ('grpc.keepalive_timeout_ms', 10000),
+        # Allow keepalive pings even when there are no active RPCs
+        ('grpc.keepalive_permit_without_calls', True),
+        # Allow unlimited keepalive pings without data
+        ('grpc.http2.max_pings_without_data', 0),
+        # Minimum time between pings from clients (5 seconds)
+        ('grpc.http2.min_ping_interval_without_data_ms', 5000),
+        # Allow clients to send keepalive pings
+        ('grpc.http2.min_recv_ping_interval_without_data_ms', 5000),
+        # Max connection idle time (5 minutes) - server will close idle connections gracefully
+        ('grpc.max_connection_idle_ms', 300000),
+        # Max connection age (30 minutes) - force reconnection periodically
+        ('grpc.max_connection_age_ms', 1800000),
+        # Grace period for max connection age (5 seconds)
+        ('grpc.max_connection_age_grace_ms', 5000),
+    ]
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        options=server_options,
+    )
     ocr_pb2_grpc.add_OCRServiceServicer_to_server(OCRService(), server)
     server.add_insecure_port('[::]:50051')
     print("gRPC Server starting on port 50051...")
