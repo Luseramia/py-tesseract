@@ -7,5 +7,5 @@ grpcio
 grpcio-tools
 protobuf
 requests
-psycopg2
+psycopg2-binary
 pdfplumber
