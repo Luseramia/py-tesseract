@@ -8,7 +8,7 @@ import cv2
 import ocr_pb2
 import ocr_pb2_grpc
 from main import extract_info_from_image
-from parse_bank_statement import parse_krungsri_statement
+from parse_bank_statement import parse_statement
 import requests
 import json
 from datetime import datetime
@@ -170,7 +170,7 @@ class OCRService(ocr_pb2_grpc.OCRServiceServicer):
                 tmp.write(request.pdf_data)
                 tmp_path = tmp.name
 
-            stmt = parse_krungsri_statement(tmp_path)
+            stmt = parse_statement(tmp_path)
             os.unlink(tmp_path)
 
             proto_txns = []

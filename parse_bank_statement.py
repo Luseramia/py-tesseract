@@ -86,6 +86,57 @@ _SUM_D_RE = re.compile(r"รายการฝากเงิน\s+([\d,]+)\s+�
 # Column header line to skip
 _HEADER_ROW_RE = re.compile(r"เวลาทำรายการ\s+รายการ")
 
+
+# ---------------------------------------------------------------------------
+# Krungthai (KTB) statement patterns
+#   TRANSACTION LINE:
+#     DD/MM/YY <type> [(CODE)] <details>  <amount>  <balance>  <branch_code>
+#   TIME LINE (next line):
+#     HH:MM  [extra notes]
+#   Year is 2-digit Buddhist era (68 → 2025, 69 → 2026).
+# ---------------------------------------------------------------------------
+
+# Transaction line: trailing amount + balance + branch are anchored at the end,
+# everything between the date and the amount is "rest" (type + code + details).
+_KTB_TX_RE = re.compile(
+    r"^(\d{2}/\d{2}/\d{2})"          # group 1: date (DD/MM/YY, Buddhist)
+    r"\s+(.*?)"                       # group 2: rest (type + code + details)
+    r"\s+([\d,]+\.\d{2})"            # group 3: amount (withdrawal OR deposit column)
+    r"\s+([\d,]+\.\d{2})"            # group 4: running balance
+    r"\s+(\d+)$"                     # group 5: branch code
+)
+
+# Time-only continuation line (may carry trailing notes after the time)
+_KTB_TIME_RE = re.compile(r"^(\d{2}:\d{2})(?:\s+(.+))?$")
+
+# Transaction code inside parentheses, e.g. (MORISW)
+_KTB_CODE_RE = re.compile(r"\(([A-Z]+)\)")
+
+# Header fields
+_KTB_NAME_RE   = re.compile(r"ชื่อบัญชี\s+(.+?)\s+ประเภทบัญชี")
+_KTB_ACCT_RE   = re.compile(r"เลขที่บัญชี\s+(\d+)")
+_KTB_BRANCH_RE = re.compile(r"(?:^|\n)สาขา\s+(\S.*?)\s*$", re.MULTILINE)
+_KTB_PERIOD_RE = re.compile(
+    r"รายการบัญชีระหว่างวันที่\s+(\d{2}/\d{2}/\d{2})\s*ถึง\s*(\d{2}/\d{2}/\d{2})"
+)
+
+# Summary (last page): "รายการถอนทั้งหมด <count> <total>"
+_KTB_SUM_W_RE = re.compile(r"รายการถอนทั้งหมด\s+([\d,]+)\s+([\d,]+\.\d{2})")
+_KTB_SUM_D_RE = re.compile(r"รายการฝากทั้งหมด\s+([\d,]+)\s+([\d,]+\.\d{2})")
+
+# Inflow keywords for KTB transaction types
+_KTB_DEPOSIT_KEYWORDS = ("เข้า", "รับ", "ฝาก", "ดอกเบี้ย")
+
+
+def _be2_to_ce(date_str: str) -> str:
+    """Convert 'DD/MM/YY' (2-digit Buddhist year) to 'DD/MM/YYYY' (Gregorian)."""
+    try:
+        dd, mm, yy = date_str.split("/")
+        ce_year = 1957 + int(yy)  # 2500+yy-543 == 1957+yy ; 68→2025, 69→2026
+        return f"{dd}/{mm}/{ce_year}"
+    except (ValueError, AttributeError):
+        return date_str
+
 # Lines to skip (bank footer, page number, address)
 _SKIP_RE = re.compile(
     r"^(Page \d+|ธนาคารกรุงศรีอยุธยา|สำนักงานใหญ่|รายการถอนเงิน|รายการฝากเงิน"
@@ -186,6 +237,127 @@ def parse_krungsri_statement(pdf_path: str) -> BankStatement:
     # Summary from the combined text
     stmt.summary = _parse_summary("\n".join(all_text))
     return stmt
+
+
+def parse_krungthai_statement(pdf_path: str) -> BankStatement:
+    """Parse a Krungthai (KTB) savings-account PDF statement."""
+    stmt = BankStatement(
+        account_name="", account_number="", branch="",
+        period_start="", period_end="",
+    )
+
+    all_text: list[str] = []
+
+    with pdfplumber.open(pdf_path) as pdf:
+        for page_idx, page in enumerate(pdf.pages):
+            text = page.extract_text(x_tolerance=3, y_tolerance=3) or ""
+            all_text.append(text)
+
+            if page_idx == 0:
+                m = _KTB_NAME_RE.search(text)
+                stmt.account_name = m.group(1).strip() if m else ""
+                m = _KTB_ACCT_RE.search(text)
+                stmt.account_number = m.group(1).strip() if m else ""
+                m = _KTB_BRANCH_RE.search(text)
+                stmt.branch = m.group(1).strip() if m else ""
+                m = _KTB_PERIOD_RE.search(text)
+                if m:
+                    stmt.period_start = _be2_to_ce(m.group(1))
+                    stmt.period_end   = _be2_to_ce(m.group(2))
+
+            _parse_ktb_lines(text.splitlines(), stmt.transactions)
+
+    # Summary totals
+    combined = "\n".join(all_text)
+    mw = _KTB_SUM_W_RE.search(combined)
+    md = _KTB_SUM_D_RE.search(combined)
+    if mw and md:
+        stmt.summary = StatementSummary(
+            withdrawal_count=int(mw.group(1).replace(",", "")),
+            withdrawal_total=_to_float(mw.group(2)),
+            deposit_count=int(md.group(1).replace(",", "")),
+            deposit_total=_to_float(md.group(2)),
+        )
+    return stmt
+
+
+def _parse_ktb_lines(lines: list[str], transactions: list[Transaction]) -> None:
+    current: Optional[Transaction] = None
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        # --- Transaction line -----------------------------------------------
+        m = _KTB_TX_RE.match(line)
+        if m:
+            date    = _be2_to_ce(m.group(1))
+            rest    = m.group(2).strip()
+            amount  = _to_float(m.group(3))
+            balance = _to_float(m.group(4))
+            branch  = m.group(5)
+
+            code_m = _KTB_CODE_RE.search(rest)
+            if code_m:
+                tx_type = rest[:code_m.start()].strip()
+                details = rest[code_m.end():].strip()
+            else:
+                tx_type = rest
+                details = ""
+
+            is_deposit = any(k in tx_type for k in _KTB_DEPOSIT_KEYWORDS)
+            if is_deposit:
+                withdrawal, deposit = None, amount
+            else:
+                withdrawal, deposit = amount, None
+
+            channel = "ATM" if ("ATM" in tx_type or (code_m and code_m.group(1).startswith("AT"))) else "MOBILE"
+
+            current = Transaction(
+                datetime         = date,   # time appended from the following line
+                transaction_type = tx_type,
+                withdrawal       = withdrawal,
+                deposit          = deposit,
+                balance          = balance,
+                channel          = channel,
+                details          = details,
+            )
+            transactions.append(current)
+            continue
+
+        # --- Time line (carries the HH:MM for the preceding transaction) ----
+        mt = _KTB_TIME_RE.match(line)
+        if mt and current is not None:
+            current.datetime = f"{current.datetime} {mt.group(1)}"
+            extra = (mt.group(2) or "").strip()
+            if extra:
+                current.details = (current.details + "\n" + extra).strip() if current.details else extra
+            current = None
+            continue
+
+        # --- Anything else resets context -----------------------------------
+        current = None
+
+
+def parse_statement(pdf_path: str) -> BankStatement:
+    """
+    Auto-detect the issuing bank and parse the statement accordingly.
+
+    Supports Krungsri (กรุงศรี) and Krungthai (กรุงไทย / KTB) savings statements.
+    Falls back to the Krungsri parser if the format cannot be identified.
+    """
+    with pdfplumber.open(pdf_path) as pdf:
+        first = pdf.pages[0].extract_text(x_tolerance=3, y_tolerance=3) or ""
+
+    is_ktb = (
+        "กรุงไทย" in first
+        or "รายการบัญชีระหว่างวันที่" in first
+        or "เลขที่บัญชี" in first
+    )
+    if is_ktb:
+        return parse_krungthai_statement(pdf_path)
+    return parse_krungsri_statement(pdf_path)
 
 
 def _parse_lines(lines: list[str], transactions: list[Transaction]) -> None:
